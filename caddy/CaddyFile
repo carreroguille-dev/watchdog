@@ -1,0 +1,3 @@
+watchdog-oopsie.duckdns.org {
+    reverse_proxy watchdog-grafana:3000
+}
