@@ -1,0 +1,56 @@
+services:
+  loki:
+    image: grafana/loki:3.5.0
+    container_name: watchdog-loki
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./loki/config.yaml:/etc/loki/local-config.yaml
+      - loki-data:/loki
+    command: -config.file=/etc/loki/local-config.yaml
+    networks:
+      - watchdog
+
+  alloy:
+    image: grafana/alloy:v1.9.2
+    container_name: watchdog-alloy
+    ports:
+      - "12345:12345"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy
+      - /var/run/docker.sock:/var/run/docker.sock
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    depends_on:
+      - loki
+    networks:
+      - watchdog
+
+  grafana:
+    image: grafana/grafana:12.0.0
+    container_name: watchdog-grafana
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - grafana-data:/var/lib/grafana
+    environment:
+      - GF_SECURITY_ADMIN_USER=carreroguille
+      - GF_SECURITY_ADMIN_PASSWORD=lokifarbauti
+      - GF_REPORTING_ENABLED=false
+    depends_on:
+      - loki
+    networks:
+      - watchdog
+
+volumes:
+  loki-data:
+  grafana-data:
+
+networks:
+  watchdog:
+    driver: bridge
